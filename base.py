@@ -22,4 +22,13 @@ class CapricaControlPoint:
     reactor.run()
 
 class CapricaDevice:
-  pass
+  def __init__(self, uuid):
+    self.uuid = uuid
+
+  def sayHi(self, proto):
+    proto.sayHi(self.uuid)
+
+  def run(self):
+    protocol = DeviceExistenceProtocol(self, PORT, self.uuid)
+    t = reactor.listenUDP(0, protocol)
+    reactor.run()
