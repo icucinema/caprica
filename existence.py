@@ -2,7 +2,7 @@
 from twisted.internet import task
 from twisted.internet.protocol import DatagramProtocol
 
-PORT = 8555
+EXISTENCE_PORT = 8555
 BROADCAST_INTERVAL = 5
 
 class DeviceExistenceProtocol(DatagramProtocol):
@@ -19,7 +19,7 @@ class DeviceExistenceProtocol(DatagramProtocol):
 
   def sayHi(self):
     hiMsg = "HELO " + self.uuid;
-    self.transport.write(hiMsg, ('<broadcast>', PORT))
+    self.transport.write(hiMsg, ('<broadcast>', EXISTENCE_PORT))
     print "broadcast"
 
 class DeviceExistenceProtocolListener(DatagramProtocol):

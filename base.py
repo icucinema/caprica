@@ -30,7 +30,7 @@ class CapricaControlPoint:
 
   def run(self):
     protocol = DeviceExistenceProtocolListener(self)
-    t = reactor.listenUDP(PORT, protocol)
+    t = reactor.listenUDP(EXISTENCE_PORT, protocol)
     l = task.LoopingCall(self.expungeLostDevices)
     l.start(EXPUNGE_INTERVAL)
     reactor.run()
@@ -43,6 +43,10 @@ class CapricaDevice:
     proto.sayHi(self.uuid)
 
   def run(self):
-    protocol = DeviceExistenceProtocol(self, PORT, self.uuid)
-    t = reactor.listenUDP(0, protocol)
+    protocol = DeviceExistenceProtocol(self, EXISTENCE_PORT, self.uuid)
+    broadcastPort = reactor.listenUDP(0, protocol)
+
+    routeList = [(key, value, dict(dev=self)) for (key, value) in self.routes.iteritems()]
+    apiApp = ApiApplication(routeList)
+    apiPort = reactor.listenTCP(API_PORT, apiApp)
     reactor.run()
