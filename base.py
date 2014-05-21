@@ -1,11 +1,13 @@
 # coding: utf-8
-
 from twisted.application import internet, service
-from twisted.internet import reactor, task
+from twisted.internet import reactor, task, protocol
+import cyclone.sse
+import cyclone.web
 from existence import *
 
 MAX_TTL = 2
 EXPUNGE_INTERVAL = 7
+API_PORT = 56789
 
 class CapricaControlPoint:
   def __init__(self):
@@ -35,7 +37,37 @@ class CapricaControlPoint:
     l.start(EXPUNGE_INTERVAL)
     reactor.run()
 
-class CapricaDevice:
+class ApiApplication(cyclone.web.Application):
+  def __init__(self, apiRoutes):
+    handlers = [(r"/updates", DevUpdateHandler)] + apiRoutes
+    settings = dict(debug=True)
+    cyclone.web.Application.__init__(self, handlers, **settings)
+
+class DevUpdateHandler(cyclone.sse.SSEHandler):
+  clients = []
+
+  def bind(self):
+    print "Got client" + client
+    self.clients.append(client)
+
+  def unbind(self):
+    print "Lost client" + client
+    self.clients.remove(client)
+
+  def broadcast(self, message):
+    for client in self.clients:
+      try:
+        client.sendEvent(message)
+      except:
+        #TODO: error handling?
+        print "Failed to send message"
+
+class CapricaRequestHandler(cyclone.web.RequestHandler):
+  def __init__(self, request, *args, **kwargs):
+    self.dev = kwargs.pop('dev')
+    super(CapricaRequestHandler, self).__init__(request, *args, **kwargs)
+
+class CapricaDevice(object):
   def __init__(self, uuid):
     self.uuid = uuid
 
