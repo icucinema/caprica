@@ -4,6 +4,7 @@ from twisted.internet import reactor, task, protocol
 import cyclone.sse
 import cyclone.web
 from existence import *
+import uuid
 
 MAX_TTL = 2
 EXPUNGE_INTERVAL = 7
@@ -38,8 +39,8 @@ class CapricaControlPoint:
     reactor.run()
 
 class ApiApplication(cyclone.web.Application):
-  def __init__(self, apiRoutes):
-    handlers = [(r"/updates", DevUpdateHandler)] + apiRoutes
+  def __init__(self, apiRoutes, parent):
+    handlers = [(r"/updates", DevUpdateHandler, dict(dev=parent))] + apiRoutes
     settings = dict(debug=True)
     cyclone.web.Application.__init__(self, handlers, **settings)
 
@@ -48,14 +49,14 @@ class DevUpdateHandler(cyclone.sse.SSEHandler):
 
   def bind(self):
     print "Got client" + client
-    self.clients.append(client)
+    DevUpdateHandler.clients.append(client)
 
   def unbind(self):
     print "Lost client" + client
-    self.clients.remove(client)
+    DevUpdateHandler.clients.remove(client)
 
   def broadcast(self, message):
-    for client in self.clients:
+    for client in DevUpdateHandler.clients:
       try:
         client.sendEvent(message)
       except:
@@ -63,13 +64,15 @@ class DevUpdateHandler(cyclone.sse.SSEHandler):
         print "Failed to send message"
 
 class CapricaRequestHandler(cyclone.web.RequestHandler):
-  def __init__(self, request, *args, **kwargs):
-    self.dev = kwargs.pop('dev')
-    super(CapricaRequestHandler, self).__init__(request, *args, **kwargs)
+  def initialize(dev)
+    self.dev = dev
+
+  def on_finish(self):
+    self.dev.
 
 class CapricaDevice(object):
-  def __init__(self, uuid):
-    self.uuid = uuid
+  def __init__(self):
+    self.uuid = uuid.uuid4()
 
   def sayHi(self, proto):
     proto.sayHi(self.uuid)
@@ -79,6 +82,6 @@ class CapricaDevice(object):
     broadcastPort = reactor.listenUDP(0, protocol)
 
     routeList = [(key, value, dict(dev=self)) for (key, value) in self.routes.iteritems()]
-    apiApp = ApiApplication(routeList)
+    apiApp = ApiApplication(routeList, self)
     apiPort = reactor.listenTCP(API_PORT, apiApp)
     reactor.run()
